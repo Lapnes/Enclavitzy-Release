@@ -1,4 +1,4 @@
-# DOMjudge API Reference — Save Exam UPC v3
+# DOMjudge API Reference — Enclavitzy
 
 > Dokumentasi lengkap integrasi DOMjudge 9.x untuk peserta lomba.
 > Semua endpoint **terverifikasi** via `cmd/test-domjudge-api.sh` v5
@@ -240,7 +240,7 @@ isCompileError = (verdict === "CE" && max_run_time === null)
 isNoOutput = (verdict === "NO-OUTPUT") // program exit 0 tanpa mencetak data ke stdout
 isTooLate = (verdict === "TOO-LATE" || (isContestOver && judgements.length === 0))
 ```
-- **Katalog & Normalisasi Verdict Kanonikal Save Exam:**
+- **Katalog & Normalisasi Verdict Kanonikal Enclavitzy:**
   | Kode DOMjudge / Raw | Kode Kanonikal | Deskripsi UI | Warna UI |
   |---|---|---|---|
   | `AC`, `correct` | `AC` | `CORRECT` (Accepted) | Hijau Emerald |
@@ -254,7 +254,7 @@ isTooLate = (verdict === "TOO-LATE" || (isContestOver && judgements.length === 0
   | `PE`, `presentation-error` | `PE` | `PRESENTATION-ERROR` | Kuning |
   | `TOO-LATE` | `TOO-LATE` | `TOO-LATE` (Kontes Berakhir) | Abu-abu Slate |
   | `null` / kosong saat kontes aktif | `PENDING` | `JUDGING / QUEUED` | Biru (Spinning) |
-- **Penanganan Submissions Kontes Berakhir (TOO-LATE):** Saat kontes telah berakhir (`now > end_time`), DOMjudge tetap menerima request POST `/submissions` dengan HTTP 200, tetapi tidak memproses penilaian di `/judgements` dan tidak menyertakannya pada filter `/submissions?strict=false`. Sistem klien Save Exam mendeteksi kondisi ini secara lokal di RAM session dan secara deterministik menetapkan vonis **`TOO-LATE`**.
+- **Penanganan Submissions Kontes Berakhir (TOO-LATE):** Saat kontes telah berakhir (`now > end_time`), DOMjudge tetap menerima request POST `/submissions` dengan HTTP 200, tetapi tidak memproses penilaian di `/judgements` dan tidak menyertakannya pada filter `/submissions?strict=false`. Sistem klien Enclavitzy mendeteksi kondisi ini secara lokal di RAM session dan secara deterministik menetapkan vonis **`TOO-LATE`**.
 - **Pre-Compilation Verification Guard:** Sebelum mengirim berkas ke endpoint `/submissions`, klien melakukan verifikasi kompilasi lokal (`compileOnly`). Jika kompilasi gagal, modal dialog peringatan (*Compile Warning Modal*) ditampilkan agar peserta dapat membatalkan atau mengonfirmasi pengiriman.
 
 ### 2.12 Detail Judgement

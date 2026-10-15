@@ -1,7 +1,7 @@
-# Security & Lockdown Model — Save Exam UPC
+# Security & Lockdown Model — Enclavitzy
 
 ## 1. Overview
-Save Exam UPC dirancang untuk kompetisi pemrograman on-site dengan pengawasan ketat. Keamanan berfokus pada:
+Enclavitzy dirancang untuk kompetisi pemrograman on-site dengan pengawasan ketat. Keamanan berfokus pada:
 1. **Desktop Lockdown (Kiosk Mode)** — Mencegah peserta berpindah aplikasi, membuka browser eksternal, mengambil tangkapan layar, atau mengakses file sistem di luar direktori lomba.
 2. **Low-Level Hardware & OS Guard** — Memblokir shortcut tingkat rendah (`Alt+Tab`, `Alt+F4`, `WinKey`, `PrintScreen`) via Win32 Low-Level Keyboard Hook (`WH_KEYBOARD_LL`) serta mematikan capture layar via `SetWindowDisplayAffinity`.
 3. **Pencegahan Force Close & Window Protection** — Mencegat event penutupan window (`prevent_close`), di mana aplikasi hanya dapat ditutup via verifikasi PIN Pengawas di backend Rust.
@@ -20,7 +20,7 @@ Save Exam UPC dirancang untuk kompetisi pemrograman on-site dengan pengawasan ke
   "app": {
     "windows": [
       {
-        "title": "Save Exam UPC",
+        "title": "Enclavitzy",
         "fullscreen": true,
         "alwaysOnTop": true,
         "decorations": false,
@@ -77,9 +77,9 @@ Untuk mencegah peserta membypass kiosk via task switcher OS, task manager, maupu
   - Saat sesi dibuka kembali (`WTS_SESSION_UNLOCK`, code `0x8`), sistem mencatat pemulihan dan mematikan flag sesi terkunci.
 - **Catatan Kernel SAS (Win+L & Task Manager) & Script Administrator:**
   - Di Windows 11, `Win+L` dan `Ctrl+Alt+Del` dikelola langsung oleh kernel OS (Secure Attention Sequence / Winlogon) dan kebal terhadap seluruh user-space hook.
-  - Untuk mematikan `Win+L` dan `Task Manager` secara tuntas di lab ujian, aplikasi Save Exam UPC harus dijalankan dengan hak Administrator via `bun run tauri:prod:admin` atau `scripts\run-kiosk-admin.bat`. Saat mendeteksi hak admin (`is_running_as_admin()`), backend Rust menulis ke `HKLM` dan `HKCU` sehingga kernel Windows menolak penguncian desktop.
+  - Untuk mematikan `Win+L` dan `Task Manager` secara tuntas di lab ujian, aplikasi Enclavitzy harus dijalankan dengan hak Administrator via `bun run tauri:prod:admin` atau `scripts\run-kiosk-admin.bat`. Saat mendeteksi hak admin (`is_running_as_admin()`), backend Rust menulis ke `HKLM` dan `HKCU` sehingga kernel Windows menolak penguncian desktop.
 - **Mekanisme Backup Atomik & Preservasi Sesi:**
-  - Sebelum menulis kebijakan, nilai asli dibaca dan disimpan ke `%LOCALAPPDATA%\SaveExamUPC\registry_backup.json` menggunakan penulisan atomik (`.tmp` lalu `rename`).
+  - Sebelum menulis kebijakan, nilai asli dibaca dan disimpan ke `%LOCALAPPDATA%\Enclavitzy\registry_backup.json` menggunakan penulisan atomik (`.tmp` lalu `rename`).
   - Nilai yang sebelumnya tidak ada dicatat sebagai `null`.
   - Jika berkas backup yang belum dipulihkan (`"restored": false`) telah ada dari sesi sebelumnya, berkas backup **TIDAK DITIMPA** demi mencegah hilangnya nilai awal pengguna.
   - Saat Proctor keluar dengan PIN sah, kebijakan dipulihkan: nilai `null` dihapus dengan `RegDeleteValueW`, nilai awal dikembalikan, dan berkas ditandai `"restored": true`.
@@ -126,7 +126,7 @@ Untuk menangani aplikasi pihak ketiga yang berjalan di latar belakang:
 
 ### 2.7 Pre-Check Aplikasi Eksternal Berbasis Whitelist & Clean Desktop Enforcer
 Sistem menerapkan prinsip **Strict Whitelist** untuk memastikan desktop bersih (*clean desktop*) saat ujian berlangsung:
-- **Deteksi Menyeluruh (Bukan Hanya Peramban):** Sistem memindai seluruh proses aktif pada sesi interaktif pengguna (`ProcessIdToSessionId`). Setiap proses yang berada di luar Whitelist aman (Save Exam, WebView2, MinGW toolchain, dan proses inti OS Windows) dikategorikan sebagai aplikasi yang tidak dibutuhkan (termasuk seluruh browser, IDE/editor eksternal, messaging/chat, office, recording/streaming, utilities, dan AI assistant).
+- **Deteksi Menyeluruh (Bukan Hanya Peramban):** Sistem memindai seluruh proses aktif pada sesi interaktif pengguna (`ProcessIdToSessionId`). Setiap proses yang berada di luar Whitelist aman (Enclavitzy, WebView2, MinGW toolchain, dan proses inti OS Windows) dikategorikan sebagai aplikasi yang tidak dibutuhkan (termasuk seluruh browser, IDE/editor eksternal, messaging/chat, office, recording/streaming, utilities, dan AI assistant).
 - **Peringatan & Kontrol di Halaman Login:** Menampilkan banner peringatan komprehensif dengan daftar aplikasi yang terkelompokkan rapi, tombol **"Tutup Semua Aplikasi"** (mematikan seluruh aplikasi non-whitelist via Win32 `TerminateProcess` + `taskkill` fallback), tombol "Periksa Ulang", dan tombol "Hubungi Pengawas".
 - **Silent Recheck Saat Memulai Ujian:** Saat tombol "Masuk & Verifikasi Akun" atau "Masuk Kontes Ini" ditekan, sistem melakukan verifikasi ulang otomatis. Jika masih ada aplikasi non-whitelist yang berjalan, akses diblokir seketika dengan modal dialog yang dilengkapi tombol instan untuk menutup seluruh aplikasi tersebut sebelum masuk arena.
 
@@ -155,7 +155,7 @@ Sistem menerapkan prinsip **Strict Whitelist** untuk memastikan desktop bersih (
   BringWindowToTop(target);
   SetWindowPos(target, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW);
   ```
-- Save Exam UPC langsung dipaksa kembali ke posisi teratas seketika, mencegah peserta mengintip aplikasi lain.
+- Enclavitzy langsung dipaksa kembali ke posisi teratas seketika, mencegah peserta mengintip aplikasi lain.
 - Frontend React melengkapi dengan listener `window.onblur` yang langsung memanggil `window.focus()`.
 
 ### 2.12 Anti-Screenshot Hardware OS (`SetWindowDisplayAffinity`)
@@ -164,7 +164,7 @@ Untuk mencegah perekaman layar, tangkapan layar, maupun sharing via software pih
   ```rust
   SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE); // fallback ke WDA_MONITOR (1)
   ```
-- Window Save Exam UPC otomatis di-render sebagai area hitam pekat (*black screen*) di semua tangkapan layar, screen recording, maupun screen sharing software.
+- Window Enclavitzy otomatis di-render sebagai area hitam pekat (*black screen*) di semua tangkapan layar, screen recording, maupun screen sharing software.
 
 ### 2.13 Pencegahan Penutupan Window (`prevent_close`) & Proctor PIN
 - Event OS `WindowEvent::CloseRequested` dicegat oleh Tauri window listener menggunakan `api.prevent_close()`.

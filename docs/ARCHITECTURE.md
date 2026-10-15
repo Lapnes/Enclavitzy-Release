@@ -1,8 +1,8 @@
-# Architecture — Save Exam UPC v3
+# Architecture — Enclavitzy
 
 ## 1. Overview
 
-**Save Exam UPC** menggunakan arsitektur aplikasi desktop 2-tier modern yang mengombinasikan keandalan sistem native berkinerja tinggi dengan antarmuka web yang fleksibel:
+**Enclavitzy** menggunakan arsitektur aplikasi desktop 2-tier modern yang mengombinasikan keandalan sistem native berkinerja tinggi dengan antarmuka web yang fleksibel:
 - **Frontend** (React 18 + CodeMirror 6 + TypeScript + Tailwind CSS) — UI interaktif, editor teks virtualized, state management client, dan visualisasi status kompetisi.
 - **Backend** (Rust 1.77+ + Tauri v2) — Manajemen proses kompilasi native C++, HTTP client & session scraping DOMjudge, I/O sistem berkas lokal, keamanan kiosk level OS, dan process sandbox.
 

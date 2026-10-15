@@ -58,26 +58,33 @@ Untuk mencegah peserta mengklik tombol Start atau ikon Task View (Multi-Desktop)
 
 ### 2.4 Layer 3: Kebijakan Registry Windows Enterprise, Driver Scancode Map 40-Byte & WTS Session Guard
 Untuk mencegah peserta membypass kiosk via task switcher OS, task manager, maupun lock screen:
+- **Otomatisasi UAC Manifest (`requireAdministrator`):**
+  - Executable Enclavitzy kini disematkan Windows Application Manifest resmi (`requestedExecutionLevel level="requireAdministrator"` via `tauri_build::WindowsAttributes`).
+  - Saat pengguna membuka `enclavitzy.exe` (baik via installer, Start Menu, Desktop, maupun portable), sistem operasi Windows secara native langsung memunculkan dialog User Account Control (UAC) meminta konfirmasi Administrator. Tanpa persetujuan hak Admin, aplikasi tidak akan diluncurkan sehingga keamanan level kernel terjamin 100%.
 - **Kebijakan Registry yang Diterapkan & Verifikasi Baca-Ulang:**
-  - `HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\System` -> `DisableTaskMgr = 1` (Menonaktifkan Task Manager dari menu Ctrl+Shift+Esc dan Ctrl+Alt+Del).
-  - `HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\System` -> `DisableLockWorkstation = 1` (Menonaktifkan penguncian komputer via Win+L).
-  - `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System` -> `DisableTaskMgr = 1` & `DisableLockWorkstation = 1` (Jika dijalankan dengan hak Administrator).
-  - `HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer` -> `NoLogoff = 1` & `NoWinKeys = 1`.
-  - `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer` -> `NoWinKeys = 1` (Jika dijalankan dengan hak Administrator).
+  - `HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\System` -> `DisableTaskMgr = 1`, `DisableLockWorkstation = 1`, `DisableChangePassword = 1`.
+  - `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System` -> `DisableTaskMgr = 1`, `DisableLockWorkstation = 1`, `DisableChangePassword = 1`, `HideFastUserSwitching = 1`.
+  - `HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer` -> `NoLogoff = 1`, `NoClose = 1`, `NoWinKeys = 1`.
+  - `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer` -> `NoLogoff = 1`, `NoClose = 1`, `NoWinKeys = 1`.
   - `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced` -> `DisabledHotkeys = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"`.
-  - `HKLM\SYSTEM\CurrentControlSet\Control\Keyboard Layout` -> `Scancode Map` binary 40-byte (Memetakan Left Win `E05B`, Right Win `E05C`, Left Alt `0038`, Right Alt `E038`, Escape `0001`, dan Apps `E05D` ke Null di level driver kernel keyboard NT jika dijalankan dengan hak Administrator; tombol Ctrl tetap dipertahankan).
+  - `HKLM\SYSTEM\CurrentControlSet\Control\Keyboard Layout` -> `Scancode Map` binary 40-byte (Memetakan Left Win `E05B`, Right Win `E05C`, Left Alt `0038`, Right Alt `E038`, Escape `0001`, dan Apps `E05D` ke Null di level driver kernel keyboard NT; tombol Ctrl tetap dipertahankan).
   - Nilai `DisableLockWorkstation` dibaca ulang langsung setelah penulisan untuk memverifikasi apakah registry berhasil diterapkan di HKCU dan HKLM.
+- **Eliminasi Total Celah Layar SAS (Secure Attention Sequence / `Ctrl+Alt+Del`):**
+  - Di Windows 10/11, layar `Ctrl+Alt+Del` (Winlogon SAS) dikelola di ring-0 kernel dan kebal terhadap seluruh user-space hook.
+  - Dengan elevasi Administrator otomatis via UAC manifest dan kebijakan HKLM yang diterapkan:
+    1. **Lock:** Dihilangkan (`DisableLockWorkstation = 1`).
+    2. **Switch user:** Dihilangkan (`HideFastUserSwitching = 1`).
+    3. **Sign out:** Dihilangkan (`NoLogoff = 1` di HKLM & HKCU). Peserta tidak bisa me-refresh sesi desktop dengan cara logout!
+    4. **Change a password:** Dihilangkan (`DisableChangePassword = 1`).
+    5. **Task Manager:** Dihilangkan (`DisableTaskMgr = 1`).
+    6. **Power/Shutdown:** Dinonaktifkan (`NoClose = 1`).
 - **Deteksi Penguncian Sesi (WTSRegisterSessionNotification Guard):**
-  - Pada Windows 11, `Win+L` dikelola oleh kernel Secure Attention Sequence (SAS). Jika sistem dijalankan tanpa hak administrator penuh, penulisan ke HKLM tidak diizinkan sehingga Win+L dapat memicu lock screen.
-  - Sebagai mitigasi definitif, sistem memuat `WTSRegisterSessionNotification` secara dinamis dari `wtsapi32.dll` dan mendaftarkan window pesan tersembunyi (`HWND_MESSAGE`).
+  - Sebagai mitigasi pertahanan berlapis, sistem memuat `WTSRegisterSessionNotification` secara dinamis dari `wtsapi32.dll` dan mendaftarkan window pesan tersembunyi (`HWND_MESSAGE`).
   - Saat Windows menerima event `WTS_SESSION_LOCK` (`WM_WTSSESSION_CHANGE`, code `0x7`), aplikasi segera:
     1. Mengaktifkan flag `IS_SESSION_LOCKED = true`.
     2. Menambah counter `session_lock_violations`.
     3. Mengirim payload telemetri darurat `FLAG_VIOLATION` ke proctor monitor server (`POST /api/telemetry`).
   - Saat sesi dibuka kembali (`WTS_SESSION_UNLOCK`, code `0x8`), sistem mencatat pemulihan dan mematikan flag sesi terkunci.
-- **Catatan Kernel SAS (Win+L & Task Manager) & Script Administrator:**
-  - Di Windows 11, `Win+L` dan `Ctrl+Alt+Del` dikelola langsung oleh kernel OS (Secure Attention Sequence / Winlogon) dan kebal terhadap seluruh user-space hook.
-  - Untuk mematikan `Win+L` dan `Task Manager` secara tuntas di lab ujian, aplikasi Enclavitzy harus dijalankan dengan hak Administrator via `bun run tauri:prod:admin` atau `scripts\run-kiosk-admin.bat`. Saat mendeteksi hak admin (`is_running_as_admin()`), backend Rust menulis ke `HKLM` dan `HKCU` sehingga kernel Windows menolak penguncian desktop.
 - **Mekanisme Backup Atomik & Preservasi Sesi:**
   - Sebelum menulis kebijakan, nilai asli dibaca dan disimpan ke `%LOCALAPPDATA%\Enclavitzy\registry_backup.json` menggunakan penulisan atomik (`.tmp` lalu `rename`).
   - Nilai yang sebelumnya tidak ada dicatat sebagai `null`.

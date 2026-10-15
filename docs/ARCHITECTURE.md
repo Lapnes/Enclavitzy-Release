@@ -278,7 +278,9 @@ Response Judgement:
 └────────────────────────────────────────────────────────────────────────┘
                                    ↓
 ┌────────────────────────────────────────────────────────────────────────┐
-│ Layer 3: Runtime Kiosk Lockdown & Hardware Display Guard               │
+│ Layer 3: Runtime Kiosk Lockdown, UAC Manifest & Hardware Display Guard │
+│ - UAC App Manifest: otomatis elevasi requireAdministrator saat dibuka  │
+│ - SAS (Ctrl+Alt+Del) Lockdown: NoLogoff, HideFastUserSwitching, NoClose│
 │ - Window fullscreen mutlak, alwaysOnTop, decorations: false            │
 │ - Win32 Low-Level Hook (WH_KEYBOARD_LL): block Alt+Tab, Alt+F4, WinKey │
 │ - SetWindowDisplayAffinity: proteksi anti-screenshot & OBS screen share│

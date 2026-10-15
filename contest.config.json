@@ -1,0 +1,64 @@
+{
+  "$schema": "./docs/schemas/contest.config.schema.json",
+  "app_name": "Enclavitzy",
+  "domjudge_url": "https://upcvi.online",
+  "proctor_pin_hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+  "compiler": {
+    "flags": [
+      "-O2",
+      "-std=c++23",
+      "-Wall",
+      "-Wextra"
+    ],
+    "compile_timeout_secs": 30,
+    "run_timeout_secs": 21,
+    "max_output_kb": 1024
+  },
+  "kiosk": {
+    "enabled_in_production": true,
+    "block_shortcuts": true,
+    "isolated_desktop": false,
+    "disable_explorer_shell": true,
+    "forbidden_processes": [
+      "taskmgr.exe",
+      "Magnify.exe",
+      "magnify.exe",
+      "DisplaySwitch.exe",
+      "displayswitch.exe",
+      "StartMenuExperienceHost.exe",
+      "SearchHost.exe",
+      "ShellExperienceHost.exe",
+      "SnippingTool.exe",
+      "ScreenClippingHost.exe",
+      "obs64.exe",
+      "obs32.exe",
+      "ShareX.exe",
+      "Greenshot.exe",
+      "Lightshot.exe",
+      "Bandicam.exe",
+      "bdcam.exe",
+      "CamtasiaStudio.exe",
+      "Zoom.exe",
+      "Teams.exe",
+      "remoting_host.exe",
+      "ScreenToGif.exe",
+      "GameBar.exe",
+      "GameBarFTServer.exe",
+      "AnyDesk.exe",
+      "TeamViewer.exe",
+      "RustDesk.exe",
+      "Discord.exe",
+      "vncserver.exe",
+      "mstsc.exe"
+    ]
+  },
+  "workspace": {
+    "submissions_folder": "Submissions",
+    "auto_save_interval_ms": 2000
+  },
+  "polling": {
+    "verdict_interval_ms": 3000,
+    "scoreboard_interval_ms": 10000
+  },
+  "monitor_server_url": "http://localhost:3001"
+}

@@ -51,6 +51,11 @@ Download the latest version directly from the **[GitHub Releases Page](https://g
 | **Vanilla** | `.exe` (NSIS Setup) | Installer ultra-ringan (~4 MB), memanfaatkan compiler lokal | Lab yang sudah memiliki MinGW / Code::Blocks |
 | **Vanilla** | `.msi` (Enterprise MSI) | Installer MSI ultra-ringan (~6 MB) | Lab dengan MinGW di PATH |
 | **Vanilla** | `.zip` (Portable Standalone) | Portable zip ultra-ringan (~6 MB) tanpa instalasi | Praktis untuk peserta dengan compiler lokal |
+ 
+> 💡 **Panduan Silent Installation (Automasi Deploy Lab Komputer):**
+> - **MSI (.msi) — CMD / Batch / GPO:** `msiexec /i "Enclavitzy-v0.0.4-windows-x64-full.msi" /quiet /qn /norestart`
+> - **NSIS (.exe) — CMD / Batch:** `Enclavitzy-v0.0.4-windows-x64-full-setup.exe /S`
+> - **PowerShell Remote:** `Start-Process msiexec.exe -ArgumentList '/i "Enclavitzy-v0.0.4-windows-x64-full.msi" /quiet /qn /norestart' -Wait`
 
 ---
 

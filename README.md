@@ -62,6 +62,8 @@ Download the latest version directly from the **[GitHub Releases Page](https://g
 ## ✨ Key Features
 
 ### 1. 🔒 Enterprise Kiosk Lockdown & Anti-Cheat
+- **Otomatisasi Hak Administrator (UAC Manifest):** Executable Enclavitzy menyematkan Windows Application Manifest resmi (`requestedExecutionLevel level="requireAdministrator"`). Windows secara otomatis memunculkan prompt Administrator saat aplikasi dibuka tanpa perlu klik kanan manual.
+- **Eliminasi Total Layar SAS (`Ctrl+Alt+Del`):** Menutup celah peserta keluar dari kiosk via logout Windows. Dengan privilese Administrator, Enclavitzy menerapkan Group Policy HKLM & HKCU yang meniadakan tombol Sign Out (`NoLogoff = 1`), Switch User (`HideFastUserSwitching = 1`), Change Password (`DisableChangePassword = 1`), Lock (`DisableLockWorkstation = 1`), Task Manager (`DisableTaskMgr = 1`), dan Power Shutdown (`NoClose = 1`).
 - **Zero Window Switch:** Memblokir tombol Windows (`WinKey`), `Alt+Tab`, `Alt+Esc`, `Alt+F4`, `Ctrl+Esc`, dan `PrintScreen` via Win32 Low-Level Keyboard Hook (`WH_KEYBOARD_LL`).
 - **Selective Shortcut Whitelist:** Mempertahankan pintasan C++ penting seperti `Alt+ArrowUp`/`Down` (move line) dan `Shift+Alt+F` (format kode), sembari menelan seluruh kombinasi navigasi berbahaya.
 - **Hardware Blackout Anti-Capture:** Memanfaatkan API Windows Kernel `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)`. Layar akan otomatis hitam pekat saat direkam OBS, Discord, Snipping Tool, atau capture card.

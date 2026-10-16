@@ -53,9 +53,9 @@ Download the latest version directly from the **[GitHub Releases Page](https://g
 | **Vanilla** | `.zip` (Portable Standalone) | Portable zip ultra-ringan (~6 MB) tanpa instalasi | Praktis untuk peserta dengan compiler lokal |
  
 > 💡 **Panduan Silent Installation (Automasi Deploy Lab Komputer):**
-> - **MSI (.msi) — CMD / Batch / GPO:** `msiexec /i "Enclavitzy-v0.0.4-windows-x64-full.msi" /quiet /qn /norestart`
-> - **NSIS (.exe) — CMD / Batch:** `Enclavitzy-v0.0.4-windows-x64-full-setup.exe /S`
-> - **PowerShell Remote:** `Start-Process msiexec.exe -ArgumentList '/i "Enclavitzy-v0.0.4-windows-x64-full.msi" /quiet /qn /norestart' -Wait`
+> - **MSI (.msi) — CMD / Batch / GPO:** `msiexec /i "Enclavitzy-v0.0.5-windows-x64-full.msi" /quiet /qn /norestart`
+> - **NSIS (.exe) — CMD / Batch:** `Enclavitzy-v0.0.5-windows-x64-full-setup.exe /S`
+> - **PowerShell Remote:** `Start-Process msiexec.exe -ArgumentList '/i "Enclavitzy-v0.0.5-windows-x64-full.msi" /quiet /qn /norestart' -Wait`
 
 ---
 

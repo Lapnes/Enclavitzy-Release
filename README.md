@@ -45,17 +45,20 @@ Download the latest version directly from the **[GitHub Releases Page](https://g
 
 | Varian | Format Berkas | Keterangan | Rekomendasi Penggunaan |
 |:---|:---|:---|:---|
-| **Full (Bundled GCC)** | `.exe` (NSIS Setup) | Installer dengan compiler MinGW GCC 13.2 ter-bundling | Lab komputer tanpa GCC sistem (Siap pakai) |
-| **Full (Bundled GCC)** | `.msi` (Enterprise MSI) | Installer Windows standar deployment GPO/Active Directory | Distribusi terpusat lab via Admin Server |
-| **Full (Bundled GCC)** | `.zip` (Portable Standalone) | Executable siap pakai tanpa perlu proses instalasi | Flashdisk pengawas / lab tanpa hak instalasi |
-| **Vanilla** | `.exe` (NSIS Setup) | Installer ultra-ringan (~4 MB), memanfaatkan compiler lokal | Lab yang sudah memiliki MinGW / Code::Blocks |
-| **Vanilla** | `.msi` (Enterprise MSI) | Installer MSI ultra-ringan (~6 MB) | Lab dengan MinGW di PATH |
-| **Vanilla** | `.zip` (Portable Standalone) | Portable zip ultra-ringan (~6 MB) tanpa instalasi | Praktis untuk peserta dengan compiler lokal |
+| **Full (Bundled GCC)** | `.exe` (NSIS Setup) | Installer all-in-one: compiler MinGW GCC 13.2 + Materi + CppReference Offline | Lab komputer tanpa GCC sistem (Siap pakai) |
+| **Full (Bundled GCC)** | `.msi` (Enterprise MSI) | Installer MSI dengan GCC 13.2 + Materi + CppReference Offline untuk Active Directory | Distribusi terpusat lab via Admin Server / GPO |
+| **Full (Bundled GCC)** | `.zip` (Portable Standalone) | Portable zip siap pakai tanpa install (GCC 13.2 + Materi + CppReference) | Flashdisk pengawas / lab tanpa hak instalasi |
+| **Docs (Vanilla + CppRef)** | `.exe` (NSIS Setup) | Installer medium: Materi Modul + CppReference Offline (~68 MB), memakai compiler lokal | Lab dengan GCC lokal yang butuh CppReference offline |
+| **Docs (Vanilla + CppRef)** | `.msi` (Enterprise MSI) | Installer MSI medium dengan CppReference Offline (~68 MB) untuk GPO | Lab dengan GCC di PATH yang butuh dokumentasi offline |
+| **Docs (Vanilla + CppRef)** | `.zip` (Portable Standalone) | Portable zip dengan CppReference Offline tanpa instalasi | Praktis untuk peserta dengan compiler lokal |
+| **Vanilla** | `.exe` (NSIS Setup) | Installer ultra-ringan (~14 MB), modul PDF saja, memanfaatkan compiler lokal | Lab yang sudah memiliki MinGW / Code::Blocks |
+| **Vanilla** | `.msi` (Enterprise MSI) | Installer MSI ultra-ringan (~16 MB) | Lab dengan MinGW di PATH |
+| **Vanilla** | `.zip` (Portable Standalone) | Portable zip ultra-ringan (~16 MB) tanpa instalasi | Praktis untuk peserta dengan compiler lokal |
  
 > 💡 **Panduan Silent Installation (Automasi Deploy Lab Komputer):**
-> - **MSI (.msi) — CMD / Batch / GPO:** `msiexec /i "Enclavitzy-v0.1.1-windows-x64-full.msi" /quiet /qn /norestart`
-> - **NSIS (.exe) — CMD / Batch:** `Enclavitzy-v0.1.1-windows-x64-full-setup.exe /S`
-> - **PowerShell Remote:** `Start-Process msiexec.exe -ArgumentList '/i "Enclavitzy-v0.1.1-windows-x64-full.msi" /quiet /qn /norestart' -Wait`
+> - **MSI (.msi) — CMD / Batch / GPO:** `msiexec /i "Enclavitzy-v0.1.2-windows-x64-full.msi" /quiet /qn /norestart`
+> - **NSIS (.exe) — CMD / Batch:** `Enclavitzy-v0.1.2-windows-x64-full-setup.exe /S`
+> - **PowerShell Remote:** `Start-Process msiexec.exe -ArgumentList '/i "Enclavitzy-v0.1.2-windows-x64-full.msi" /quiet /qn /norestart' -Wait`
 
 ---
 

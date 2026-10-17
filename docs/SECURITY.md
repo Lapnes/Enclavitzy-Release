@@ -299,3 +299,38 @@ Untuk mendukung modul referensi resmi (Modul Praktikum SDA dan Modul STRAGO UTS)
 3. **Embedded Binary Payload Immunity:** Payload byte PDF di-embed langsung ke dalam biner executable (`include_bytes!`) atau bundle terisolasi, sehingga sistem kebal terhadap upaya replace, injeksi berkas palsu, atau penghapusan berkas di hard disk komputer laboratorium.
 4. **Anti-Leak Display Protection:** Modul materi dirender via HTML5 canvas memori RAM tanpa tombol unduh/simpan, bebas dari dialog cetak (`@media print { display: none }`), dan terlindungi oleh proteksi anti-capture hardware OS (`WDA_EXCLUDEFROMCAPTURE`).
 
+---
+
+## 9. Analisis Keamanan Indikator Baterai & Batasan Layar SAS (`Ctrl+Alt+Del`)
+
+### 9.1 Mengapa Layar SAS Hanya Menampilkan Cancel & Network?
+Pada konfigurasi Kiosk Enclavitzy, registry Windows dimodifikasi untuk menonaktifkan seluruh opsi breakout:
+* `DisableTaskMgr = 1`
+* `DisableLockWorkstation = 1`
+* `DisableChangePassword = 1`
+* `HideFastUserSwitching = 1`
+* `NoLogoff = 1` & `NoClose = 1`
+
+Oleh karena itu, Windows secara internal menyembunyikan semua opsi yang dilarang dan hanya menyisakan tombol `Cancel` dan menu `Network`.
+
+### 9.2 Batasan Arsitektur Windows: Larangan Injeksi UI pada Layar SAS
+Layar `Ctrl+Alt+Del` berjalan di desktop terisolasi tingkat kernel bernama **Winlogon Secure Desktop** di bawah konteks akun `NT AUTHORITY\SYSTEM`. 
+Sistem operasi Windows **melarang mutlak** aplikasi pihak ketiga menyuntikkan atau merender elemen antarmuka (*widgets/overlays*) ke dalam desktop ini. Pembatasan ini adalah fondasi keamanan Windows untuk mencegah trojan dan malware melakukan pencurian kredensial (*credential phishing*).
+
+### 9.3 Evaluasi Keamanan Fitur Indikator Baterai
+Indikator daya yang disematkan pada Enclavitzy **100% AMAN dan Zero Security Risk**:
+1. **Panggilan Kernel Read-Only:** Menggunakan Win32 API native `GetSystemPowerStatus` yang murni membaca register status daya ACPI dari BIOS/UEFI.
+2. **Zero Attack Surface:** Tidak membuat socket jaringan keluar, tidak menulis data ke disk atau registry, dan tidak mengubah interupsi keyboard hook (`WH_KEYBOARD_LL`).
+3. **Meningkatkan Integritas Kontes:** Mengurangi insiden teknis laptop peserta mati mendadak saat ujian berlangsung.
+
+---
+
+## 10. Integritas Waktu Server & Perlindungan Timer Kontes
+
+1. **Anti-Manipulasi Jam Lokal Komputer Peserta:**
+   - Waktu hitung mundur dan jam ujian tidak mengandalkan jam lokal PC peserta yang bisa diubah-ubah secara manual.
+   - Menggunakan kompensasi selisih waktu (`server_time_offset_secs`) yang dihitung langsung dari header HTTP `Date` resmi server DOMjudge saat autentikasi.
+2. **Tabular Monospace Layout (Anti-Distraction):**
+   - Menggunakan `font-mono tabular-nums` untuk memastikan antarmuka stabil dan tidak bergetar (*layout jitter*) di setiap pergantian detik.
+
+

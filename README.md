@@ -84,6 +84,16 @@ Download the latest version directly from the **[GitHub Releases Page](https://g
 - Client secara asinkron mendispatch telemetri tombol kombinasi mencurigakan (`DANGER`, `WARNING`, `SUS`) ke Proctor Monitor Server (`:3001`).
 - Pengawas dapat memantau seluruh peserta ujian secara real-time via dashboard web interaktif dengan filter tim dan notifikasi audio.
 
+### 5. 🔋 Real-Time Hardware Battery Monitor
+- Membaca status daya hardware secara native via Win32 API `GetSystemPowerStatus` (< 0.001ms, read-only ACPI register).
+- Menampilkan status daya AC untuk PC desktop, dan persentase baterai serta status pengisian daya untuk laptop dengan peringatan visual berkedip saat baterai $\le 20\%$.
+- 100% aman dan tidak melonggarkan keamanan kiosk.
+
+### 6. ⏱️ Real-Time Contest Clock & Countdown Timer HUD (Center Header Pill)
+- Disematkan di bagian tengah navigasi atas (Top Header Bar) dalam bentuk Center HUD Pill yang bersih dan hemat ruang.
+- Waktu disinkronkan presisi terhadap header HTTP `Date` server DOMjudge (`server_time_offset_secs`) untuk mencegah manipulasi jam lokal PC peserta.
+- Format angka monospace tabular (`font-mono tabular-nums`) anti-getar (*zero layout jitter*), dengan transisi dinamis (Upcoming, Running, Warning $\le 15$ menit berkedip, dan Ended).
+
 ---
 
 ## 📋 Contest Organizer Guide

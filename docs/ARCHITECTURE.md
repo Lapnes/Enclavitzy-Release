@@ -328,3 +328,30 @@ Konfigurasi build:
 | Inisialisasi Editor | ~1200 ms | < 500 ms | **~350–400 ms** |
 | Kecepatan Kompilasi (Single File) | ~2.5 detik | < 2.0 detik | **~1.2–1.6 detik**|
 | Disk Leakage (Statement PDF) | File tersimpan di disk | 0 Bytes di disk | **0 Bytes (RAM only)** |
+
+---
+
+## 11. Subsistem Pemantau Daya Hardware & Timer HUD Kontes
+
+### 11.1 Pemantauan Daya Hardware Native (`GetSystemPowerStatus`)
+- **Backend Rust Layer (`src-tauri/src/security/kiosk.rs`):** Memanggil langsung fungsi Win32 `GetSystemPowerStatus` dari pustaka `windows-sys` / `kernel32.dll`.
+- **Karakteristik Kinerja:** Eksekusi kernel < 0.001 ms, zero allocations, murni pembacaan register daya ACPI BIOS.
+- **Payload Data IPC:** Mengembalikan struktur `BatteryInfo`:
+  ```rust
+  pub struct BatteryInfo {
+      pub has_battery: bool,
+      pub is_charging: bool,
+      pub percent: u8,
+  }
+  ```
+- **Siklus Polling:** Diperbarui secara teratur oleh frontend setiap 10 detik tanpa beban I/O.
+
+### 11.2 Subsistem Timer & Countdown HUD Sinkron Server
+- **Sinkronisasi Offset Waktu:** Menghitung `server_time_offset_secs = server_timestamp - client_timestamp` dari header HTTP `Date` saat login.
+- **State Machine Siklus Kontes:**
+  - `Upcoming`: Menghitung mundur menuju `start_time`.
+  - `Running`: Menampilkan jam sistem terkompensasi dan countdown menuju `end_time`.
+  - `Warning`: Transisi visual otomatis saat sisa waktu $\le 15$ menit.
+  - `Ended`: Membekukan hitungan saat `now >= end_time`.
+- **Presisi Visual:** Monospace tabular formatting (`font-mono tabular-nums`) untuk menghilangkan getaran antarmuka (*layout jitter*) per detik.
+

@@ -466,18 +466,64 @@ Sebelum solusi dikirim ke endpoint `/submissions`, sistem menjalankan validasi k
 
 ---
 
-## 6. Polling Strategy
+## 6. Polling Strategy & High-Concurrency Protection
 
-| Resource | Interval | Endpoint |
-|----------|----------|----------|
-| Submissions | 3s | `GET /contests/{cid}/submissions?strict=false` |
-| Judgements | 3s | `GET /contests/{cid}/judgements?submission_id={id}` |
-| Clarifications | 3s | `GET /contests/{cid}/clarifications` |
-| Scoreboard | 10s | `GET /contests/{cid}/scoreboard` |
+Pada skala > 100 klien lab simultan, polling statis dengan interval rapat berpotensi memicu **thundering herd problem** yang menghabiskan *worker process* PHP-FPM di server DOMjudge hingga berujung pada error `502 Bad Gateway` atau `504 Gateway Timeout`.
 
-**Jangan < 3s.** Server rate-limit.
+Oleh karena itu, Enclavitzy menerapkan **Tiered Polling with Random Jitter** di frontend yang dipadukan dengan **In-Memory TTL Caching & Deduplication** di backend Rust.
 
-**Verdict polling:** awal 1s × 15, lanjut 3s × 10 (max ~45s total). Verdict biasanya muncul < 6s.
+### 6.1 Polling Intervals & Jitter Matrix
+
+| Resource | Base Interval | Jitter Window | Effective Interval | Endpoint |
+|----------|---------------|---------------|-------------------|----------|
+| **Submissions (Global)** | 10s | ±20% (±2s) | **8s – 12s** | `GET /contests/{cid}/submissions?strict=false` |
+| **Tracked Pending Submission** | 5s | - | **5s** (max 2m) | `GET /contests/{cid}/submissions?strict=false` |
+| **Clarifications** | 15s | ±13% (±2s) | **13s – 17s** | `GET /contests/{cid}/clarifications` |
+| **Scoreboard** | 30s | - | **30s** | `GET /contests/{cid}/scoreboard` |
+| **Problem List Auto-Sync** | 45s | - | **45s** (5s jika kosong) | `GET /contests/{cid}/problems` |
+
+> [!IMPORTANT]
+> **Aturan Skalabilitas:**
+> 1. Dilarang polling submissions/clarifications di bawah 5 detik secara serentak di lingkungan lab > 50 peserta.
+> 2. Polling interval wajib diberi **random jitter** (`interval * (0.8 + Math.random() * 0.4)`) agar paket HTTP tidak tiba di server web pada milidetik yang sama (*staggered traffic*).
+
+### 6.2 Centralized Single-Flight Poller di Backend Rust (`app.emit`)
+Alih-alih membiarkan tiap komponen React (`App.tsx`, `SubmissionsView.tsx`) menjalankan `setInterval` mandiri, Enclavitzy v0.3.3 menerapkan arsitektur **Single Centralized Poller di Backend Rust**:
+1. **Single-Flight Sequential Execution:** Loop berjalan berurutan di background thread tokio (`await fetch() -> sleep()`). Meniadakan penumpukan request (*request piling*) saat respons server sedang lambat.
+2. **Adaptive Poller Interval:**
+   - **4s (±20% Jitter):** Saat ada submission milik tim yang berstatus `PENDING` (sedang di-judge).
+   - **15s (±20% Jitter):** Saat seluruh submission tim telah berstatus final (idle).
+3. **Selective Judgements Fetching:**
+   - Vonis final (**AC, WA, TLE, RTE, CE, MLE, OLE, PE, TOO-LATE**) bersifat **immutable**. Backend Rust menyimpan vonis tersebut ke `final_verdicts_cache`.
+   - Jika seluruh submission milik tim sudah tercatat di cache, endpoint **`/judgements` dilewati 100% (zero HTTP request ke judgements)**!
+   - Endpoint `/judgements` hanya disentuh jika ada submission baru yang belum tercatat atau masih pending.
+4. **Exponential Backoff saat Server Error (502/503/504/429):**
+   - Jika server mengalami kegagalan, klien otomatis melipatgandakan interval mundur (2s $\to$ 4s $\to$ 8s $\to$ 16s $\to$ max 60s) serta menghormati header `Retry-After`.
+5. **Instant Event-Driven Trigger:**
+   - Saat peserta menekan "Kirim Solusi" (`submit_solution`), backend langsung memanggil `poll_trigger.notify_one()`, membangunkan poller seketika untuk mem-push status terbaru ke UI tanpa jeda tidur.
+6. **Reactive Event Push ke Frontend:**
+   - Hasil olahan data dipancarkan via `app.emit("domjudge:submissions", payload)`. Komponen React cukup mendengarkan pasif via `listen()`, menghilangkan 100% duplikasi RPC/IPC.
+
+### 6.3 Backend In-Memory TTL Cache & Request Deduplication
+Untuk melayani pemanggilan instan saat tab baru dibuka, Rust backend `AppState` menyediakan cache transien di memori:
+
+- **`submissions_cache` (TTL 3s):** Menyimpan daftar submission beserta judgement dan status kontes. Jika ada beberapa pemanggilan `domjudge_get_submissions` dalam rentang 3 detik, request kedua langsung dilayani dari RAM tanpa kontak ke server.
+- **`contest_ended_cache` (TTL 60s):** Menyimpan boolean status apakah kontes sudah berakhir untuk menghemat request pengecekan waktu.
+- **`problems_cache` (TTL 10s):** Menyimpan daftar soal dari `domjudge_get_problems` di RAM backend.
+- **`clarifications_cache` (TTL 5s):** Menyimpan daftar klarifikasi juri di RAM backend. Mengeliminasi tabrakan request antara background watcher `App.tsx` dan tab `ClarificationsView`. Otomatis di-invalidate saat peserta mengirim klarifikasi baru.
+- **`scoreboard_cache` (TTL 10s):** Menyimpan response scoreboard di RAM backend untuk mencegah overload saat puluhan peserta membuka tab klasemen secara bersamaan.
+- **`teams_cache` (TTL 60s):** Menyimpan metadata tim peserta di RAM backend. Komponen frontend `ScoreboardView.tsx` juga melompati query teams jika metadata sudah ada di memory.
+- **`final_verdicts_cache`:** Menyimpan vonis final secara permanen selama kontes berlangsung (O(1) memory lookup).
+- **HTTP Connection Pool:** Mengaktifkan TCP Keepalive, connection pool idle timeout 90s, default request timeout 30s, dan submission upload timeout 60s di `reqwest::Client`.
+
+### 6.4 Manual Force Reload & `/judgements` Bypass (`domjudge_force_refresh_all`)
+Untuk menangani kasus di mana dewan juri melakukan **re-judging** (mengubah status vonis yang sebelumnya sudah tercatat) atau saat peserta ingin memastikan vonis terbaru dari server:
+- Frontend menyediakan tombol **"Muat Ulang Semua (/judgements)"** di header tabel `SubmissionsView.tsx` dan integrasi pada tombol refresh `ZenSidebar.tsx`.
+- Memanggil IPC command `domjudge_force_refresh_all`:
+  1. Menghapus seluruh in-memory cache dan `final_verdicts_cache`.
+  2. Memaksa backend menembus selective judgements dan memanggil langsung `GET /api/v4/contests/{cid}/judgements` serta `GET /submissions` dari server DOMjudge.
+  3. Memancarkan event `app.emit("domjudge:submissions")` untuk memperbarui seluruh UI secara instan.
+  4. Dilindungi timer cooldown 5 detik untuk mencegah thundering herd dan spam klik.
 
 ---
 

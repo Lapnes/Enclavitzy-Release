@@ -193,16 +193,17 @@ Backend Rust (materials_service.rs):
 invoke('materials_get_pdf', { id: 'sda' })
           ↓
 Backend Rust:
-1. Validasi ID terhadap approved whitelist ('sda', 'strago').
+1. Validasi ID terhadap approved whitelist ('sda', 'strago', 'strago_uas').
 2. Ambil byte PDF dari binary payload (include_bytes!) atau bundle resource terverifikasi.
 3. Validasi kriptografi SHA-256 terhadap hardcoded checksum resmi:
    - SDA: 810e4c4866c054a1566626a30103737f84bf63dbf3931db2bb4c496e86c84bed
-   - STRAGO: 3f81a702a794fcb236bbad74457bd976c8c6b67e5e727d50753b63509c35b2a5
+   - STRAGO UTS: 3f81a702a794fcb236bbad74457bd976c8c6b67e5e727d50753b63509c35b2a5
+   - STRAGO UAS: c57ef038a7ac13acbf38b71da3a7a48f9a469fdf8ed20fc7573a2330ca71f9fa
 4. Jika checksum cocok, encode ke base64 data URL ("data:application/pdf;base64,...").
 5. Jika checksum tidak cocok atau file dimanipulasi, return AppError::Security ("Integrity check failed").
           ↓
 Frontend:
-1. Memuat PDF via `pdfjs-dist` langsung ke elemen HTML5 `<canvas>`.
+1. Memuat PDF via `pdfjs-dist` langsung ke elemen HTML5 `<canvas>` dengan lazy viewport virtualization (`IntersectionObserver`, `rootMargin: 650px`) dan pelepasan memori bitmap otomatis untuk dokumen panjang (276+ halaman).
 2. **In-Document Search Engine (Ctrl+F):** Mengekstrak `textContent` per halaman via `page.getTextContent()`, melakukan pencocokan teks case-insensitive, menghitung jumlah kecocokan global, menyediakan navigasi next/prev match, auto-scroll ke halaman yang cocok, dan highlight kontainer halaman. Terintegrasi dengan pencegah browser Find bawaan.
 3. Anti-leak print ban (`@media print { display: none }`), tanpa tombol download/ekspor, proteksi context menu.
 ```

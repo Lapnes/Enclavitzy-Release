@@ -1,7 +1,7 @@
 {
   "$schema": "./docs/schemas/contest.config.schema.json",
   "app_name": "Enclavitzy",
-  "domjudge_url": "https://upcvi.online",
+  "domjudge_url": "https://uas-strago.tenzly.pro",
   "proctor_pin_hash": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
   "compiler": {
     "flags": [
@@ -58,8 +58,8 @@
     "auto_save_interval_ms": 2000
   },
   "polling": {
-    "verdict_interval_ms": 3000,
-    "scoreboard_interval_ms": 10000
+    "verdict_interval_ms": 5000,
+    "scoreboard_interval_ms": 30000
   },
   "monitor_server_url": "http://localhost:3001"
 }

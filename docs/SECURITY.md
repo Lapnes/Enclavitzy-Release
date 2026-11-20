@@ -154,15 +154,10 @@ Sistem menerapkan prinsip **Strict Whitelist** untuk memastikan desktop bersih (
 - Opsi `"isolated_desktop": false` dipertahankan di konfigurasi sebagai fitur eksperimental.
 - **Catatan Arsitektur WebView2:** Engine WebView2 (Chromium multi-process) memerlukan penanganan token sesi dan WindowStation inheritance yang sangat kompleks jika dijalankan di desktop Win32 terpisah (`CreateDesktopW`), yang sering mengakibatkan render failure jika dijalankan dalam satu proses terpadu (kendala serupa yang dialami Safe Exam Browser saat migrasi CEF ke WebView2). Implementasi produksi masa depan memerlukan architecture launcher mandiri. Arsitektur berlapis saat ini (Default Desktop + Hidden Taskbar + Watchdogs + Registry Policies + Hook + ExcludeFromCapture) memberikan stabilitas 100% tanpa risiko crash WebView2.
 
-### 2.11 Watchdog Foreground Agresif & Anti-Alt-Tab Snapback
-- Dedicated background worker di Rust (interval 80ms) memantau `GetForegroundWindow()`.
-- Jika window lain mencoba mengambil fokus atau muncul di atas:
-  ```rust
-  SetForegroundWindow(target);
-  BringWindowToTop(target);
-  SetWindowPos(target, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW);
-  ```
-- Enclavitzy langsung dipaksa kembali ke posisi teratas seketika, mencegah peserta mengintip aplikasi lain.
+### 2.11 Watchdog Foreground, Z-Order Integrity Guard & Anti-Floating-Window Enforcement
+- Urutan konfigurasi window di `src-tauri/src/lib.rs` menerapkan `set_decorations(false)` $\to$ `set_resizable(false)` $\to$ `set_fullscreen(true)` $\to$ `set_always_on_top(true)` $\to$ `set_focus()` sebelum aktivasi lockdown agar mutasi `GWL_STYLE` tidak membatalkan `WS_EX_TOPMOST` di DWM Windows 11.
+- **Startup Foreign Window Sweep (`EnumWindows` + `DWMWA_CLOAKED`):** Saat Kiosk aktif dan pasca penghentian `explorer.exe`, backend menyapu seluruh top-level window proses asing yang benar-benar terlihat di layar (`is_effectively_visible_window`: visible, tidak iconic, dimensi non-zero, dan tidak DWM-cloaked), mencabut flag `WS_EX_TOPMOST` (`HWND_NOTOPMOST`), mendorong ke `HWND_BOTTOM`, dan meminimalkan/menyembunyikannya secara non-blocking (`ShowWindowAsync`) tanpa mengganggu dropdown WebView2 milik pohon proses Enclavitzy sendiri.
+- **Event-Driven Focus + MinimizeEnd Hook & Lazy 1000ms Z-Order Timer:** `SetWinEventHook` memantau `EVENT_SYSTEM_FOREGROUND` dan `EVENT_SYSTEM_MINIMIZEEND` (<1ms) disertai `WM_TIMER` 1000ms di thread message pump yang sama (0 extra thread, lazy Toolhelp32 snapshot — 0% CPU saat idle) untuk memeriksa Z-order `GetWindow(target, GW_HWNDPREV)`, `IsIconic` (`SW_RESTORE`), dan `WS_EX_TOPMOST`. Dilengkapi `AttachThreadInput` sementara agar `SetForegroundWindow` tidak ditolak oleh Windows Foreground Lock Timeout, serta dispatch non-blocking `WM_ENFORCE_KIOSK_ZORDER` dari `WindowEvent::Focused(false)` yang tetap menjaga isolasi jendela asing meski modal PIN Pengawas belum terautentikasi sedang terbuka.
 - Frontend React melengkapi dengan listener `window.onblur` yang langsung memanggil `window.focus()`.
 
 ### 2.12 Anti-Screenshot Hardware OS (`SetWindowDisplayAffinity`)
@@ -293,8 +288,8 @@ Proses binary peserta tidak diberikan handle socket jaringan. Peserta tidak dapa
 
 ## 8. Anti-Tamper & Proteksi Materi Ujian / Modul Referensi
 
-Untuk mendukung modul referensi resmi (Modul Praktikum SDA dan Modul STRAGO UTS) tanpa membuka celah kecurangan atau penyelundupan catatan sontekan:
-1. **Immutable Static Whitelist:** Backend Rust tidak pernah memindai sembarang berkas dari direktori disk. Hanya ID dan berkas yang terdaftar secara eksplisit di manifest statis kode Rust (`sda`, `strago`) yang dapat dilayani oleh IPC `materials_get_pdf`.
+Untuk mendukung modul referensi resmi (Modul Praktikum SDA, Modul STRAGO UTS, dan Modul STRAGO UAS) tanpa membuka celah kecurangan atau penyelundupan catatan sontekan:
+1. **Immutable Static Whitelist:** Backend Rust tidak pernah memindai sembarang berkas dari direktori disk. Hanya ID dan berkas yang terdaftar secara eksplisit di manifest statis kode Rust (`sda`, `strago`, `strago_uas`) yang dapat dilayani oleh IPC `materials_get_pdf`.
 2. **Kriptografi SHA-256 Checksum Enforcement:** Setiap payload materi wajib lolos verifikasi hash SHA-256 yang di-hardcode di biner backend. Jika berkas diubah 1 byte saja oleh peserta atau hacker lab, sistem langsung menolak dan membangkitkan `AppError::Security("Integrity check failed")`.
 3. **Embedded Binary Payload Immunity:** Payload byte PDF di-embed langsung ke dalam biner executable (`include_bytes!`) atau bundle terisolasi, sehingga sistem kebal terhadap upaya replace, injeksi berkas palsu, atau penghapusan berkas di hard disk komputer laboratorium.
 4. **Anti-Leak Display Protection:** Modul materi dirender via HTML5 canvas memori RAM tanpa tombol unduh/simpan, bebas dari dialog cetak (`@media print { display: none }`), dan terlindungi oleh proteksi anti-capture hardware OS (`WDA_EXCLUDEFROMCAPTURE`).
